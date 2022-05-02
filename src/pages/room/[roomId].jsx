@@ -1,11 +1,15 @@
-import { ArrowLeftIcon } from '@primer/octicons-react';
-import Image from 'next/image';
+import { PeopleIcon } from '@primer/octicons-react';
 import { useRouter } from 'next/router';
-import { useContext, useEffect, useRef, useState } from 'react';
-import Participant from '~/components/participant';
-import { AuthContext } from '~/contexts';
+import { useContext, useEffect, useState } from 'react';
+import { LocalParticipant, RemoteParticipant } from '~/components/participant';
 import { MeetContext } from '~/contexts/meet-context';
-import Video from 'twilio-video';
+import {
+	Mic as MicIcon,
+	MicMute as MicMuteIcon,
+	Phone as PhoneIcon,
+	VideoCamera as VideoCameraIcon,
+	VideoCameraOff as VideoCameraOffIcon,
+} from 'iconoir-react';
 
 function getTimeNow() {
 	const date = new Date();
@@ -20,8 +24,17 @@ export default function Room() {
 	const router = useRouter();
 	const [time, setTime] = useState(getTimeNow);
 	// const { isLoading } = useContext(AuthContext);
-	const { initializeMeet, room, leaveRoom, participants, roomName } =
-		useContext(MeetContext);
+	const {
+		initializeMeet,
+		room,
+		leaveRoom,
+		participants,
+		roomName,
+		toggleVideo,
+		toggleAudio,
+		isSharingVideo,
+		isSharingAudio,
+	} = useContext(MeetContext);
 
 	useEffect(() => {
 		initializeMeet();
@@ -30,22 +43,12 @@ export default function Room() {
 			setTime(now);
 		};
 
-		// Video.createLocalVideoTrack()
-		// 	.then(localTrack => {
-		// 		console.log({ localTrack });
-		// 	})
-		// 	.catch(error =>
-		// 		console.log(
-		// 			'gestionar fallback para cuando no hay permisos. (mostrar la imagen y el nombre del usuario)',
-		// 			error
-		// 		)
-		// 	);
-
 		setInterval(updateTime, 1000);
 
 		return () => {
 			clearInterval(updateTime);
 		};
+		// eslint-disable-next-line react-hooks/exhaustive-deps
 	}, []);
 
 	const handleLeaveRoom = () => {
@@ -53,66 +56,62 @@ export default function Room() {
 		router.replace('/');
 	};
 
-	// if (!room) {
-	// 	return <p>Loading...</p>;
-	// }
-
 	return (
 		<main className='w-full h-screen grid grid-rows-room-layout'>
-			<section className='bg-slate-900 p-6'>
-				<section className='flex flex-wrap gap-4'>
-					{/* {room && <Participant participant={room.localParticipant} />} */}
-				</section>
-				<section className='gap-4 grid grid-cols-participants-layout auto-rows-participants'>
-					{room && <Participant participant={room.localParticipant} />}
-					{/* {!isLoading && (
-						<section
-							ref={localParticipantRef}
-							className='bg-slate-800 rounded-lg flex flex-col items-center justify-center gap-4 aspect-video overflow-hidden'
-						>
-							<figure className='w-16 h-16 rounded-full overflow-hidden relative p-2'>
-								<Image src={user.image} alt={user.name} layout='fill' />
-							</figure>
-							<p className='text-lg font-medium text-slate-100'>{user.name}</p>
-							<div ref={videoRef} className='w-full'></div>
-							<video style={{ width: '100%' }} ref={videoRef} autoPlay={true} />
-							<audio ref={null} autoPlay={true} muted={true} />
-						</section>
-					)} */}
-					{participants.map(participant => (
-						<Participant key={participant.sid} participant={participant} />
-						// <section
-						// 	key={participant.id}
-						// 	className='bg-slate-800 rounded-lg flex flex-col items-center justify-center p-2 gap-4 aspect-video'
-						// >
-						// 	<figure className='w-16 h-16 rounded-full overflow-hidden relative'>
-						// 		<Image
-						// 			src={participant.image}
-						// 			alt={participant.name}
-						// 			layout='fill'
-						// 		/>
-						// 	</figure>
-						// 	<p className='text-lg font-medium text-slate-100'>
-						// 		{participant.name}
-						// 	</p>
-						// 	{/* <video style={{ width: '100%' }} ref={null} autoPlay={true} />
-						// 	<audio ref={null} autoPlay={true} muted={true} /> */}
-						// </section>
-					))}
-				</section>
+			<section className='bg-slate-900 p-6 gap-4 grid grid-cols-participants-layout auto-rows-participants justify-center lg:justify-start'>
+				{room && (
+					<LocalParticipant
+						participant={room.localParticipant}
+						isSharingVideo={isSharingVideo}
+						isSharingAudio={isSharingAudio}
+					/>
+				)}
+				{participants.map(participant => (
+					<RemoteParticipant key={participant.sid} participant={participant} />
+				))}
 			</section>
 			<footer className='flex px-6 py-3 items-center justify-between bg-slate-800 text-slate-50'>
 				<p className='flex items-center gap-4 font-semibold'>
-					{time}
-					<span className='h-4 w-[1px] bg-slate-50 inline-block'></span>
-					{roomName}
+					<span className='hidden md:inline-block'>{time}</span>
+					<span className='hidden md:inline-block h-4 w-[1px] bg-slate-50'></span>
+					<span className='whitespace-nowrap overflow-hidden text-ellipsis max-w-[56px] md:max-w-[auto]'>
+						{roomName}
+					</span>
 				</p>
-				<button
-					onClick={handleLeaveRoom}
-					className='py-2 px-4 rounded-md text-rose-500 bg-rose-300/10 text-sm font-medium'
-				>
-					<ArrowLeftIcon size={16} /> Salir de la reunión
-				</button>
+				<section className='flex items-center gap-2'>
+					<button onClick={toggleVideo}>
+						{isSharingVideo ? (
+							<div className='p-2 rounded-xl hover:bg-slate-700 text-slate-400'>
+								<VideoCameraIcon stroke={2} />
+							</div>
+						) : (
+							<div className='p-2 rounded-xl bg-rose-500 text-slate-50'>
+								<VideoCameraOffIcon stroke={2} />
+							</div>
+						)}
+					</button>
+					<button onClick={toggleAudio}>
+						{isSharingAudio ? (
+							<div className='p-2 rounded-xl hover:bg-slate-700 text-slate-400'>
+								<MicIcon stroke={2} />
+							</div>
+						) : (
+							<div className='p-2 rounded-xl bg-rose-500 text-slate-50'>
+								<MicMuteIcon stroke={2} />
+							</div>
+						)}
+					</button>
+					<button
+						onClick={handleLeaveRoom}
+						className='py-2 px-4 rounded-xl bg-rose-500 text-slate-50 text-sm font-medium'
+					>
+						<PhoneIcon stroke={2} />
+					</button>
+				</section>
+				<section className='flex items-center gap-2'>
+					<span className='text-sm font-bold'>{participants.length + 1}</span>
+					<PeopleIcon size={22} />
+				</section>
 			</footer>
 		</main>
 	);

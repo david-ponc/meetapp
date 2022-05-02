@@ -7,8 +7,6 @@ import {
 } from 'firebase/auth';
 import { mapperUser } from '~/libs/mapper-user';
 
-console.log(process.env.FIREBASE_APIKEY);
-
 const firebaseConfig = {
 	apiKey: process.env.NEXT_PUBLIC_FIREBASE_APIKEY,
 	authDomain: process.env.NEXT_PUBLIC_FIREBASE_AUTHDOMAIN,

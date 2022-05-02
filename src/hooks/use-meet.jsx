@@ -4,72 +4,45 @@ import Video from 'twilio-video';
 const MIN_ROOM_NAME_LENGTH = 16;
 
 export function useMeet() {
+	const [localTracks, setLocalTracks] = useState([]);
 	const [room, setRoom] = useState(null);
-	const [participants, setParticipants] = useState([
-		// {
-		// 	id: 1,
-		// 	name: 'David copia',
-		// 	image: 'https://avatars.githubusercontent.com/u/32694631?v=4',
-		// },
-		// {
-		// 	id: 2,
-		// 	name: 'David copia',
-		// 	image: 'https://avatars.githubusercontent.com/u/32694631?v=4',
-		// },
-		// {
-		// 	id: 3,
-		// 	name: 'David copia',
-		// 	image: 'https://avatars.githubusercontent.com/u/32694631?v=4',
-		// },
-		// {
-		// 	id: 4,
-		// 	name: 'David copia',
-		// 	image: 'https://avatars.githubusercontent.com/u/32694631?v=4',
-		// },
-		// {
-		// 	id: 4,
-		// 	name: 'David copia',
-		// 	image: 'https://avatars.githubusercontent.com/u/32694631?v=4',
-		// },
-		// {
-		// 	id: 4,
-		// 	name: 'David copia',
-		// 	image: 'https://avatars.githubusercontent.com/u/32694631?v=4',
-		// },
-		// {
-		// 	id: 4,
-		// 	name: 'David copia',
-		// 	image: 'https://avatars.githubusercontent.com/u/32694631?v=4',
-		// },
-		// {
-		// 	id: 4,
-		// 	name: 'David copia',
-		// 	image: 'https://avatars.githubusercontent.com/u/32694631?v=4',
-		// },
-	]);
+	const [participants, setParticipants] = useState([]);
 	const [token, setToken] = useState(null);
 	const [roomName, setRoomName] = useState('');
 	const [isLoading, setLoading] = useState(false);
+	const [isSharingVideo, setSharingVideo] = useState(false);
+	const [isSharingAudio, setSharingAudio] = useState(false);
 
 	useEffect(() => {
-		const participantConnected = participant => {
-			setParticipants(prevParticipants => [...prevParticipants, participant]);
-		};
-
-		const participantDisconnected = participant => {
-			setParticipants(prevParticipants =>
-				prevParticipants.filter(p => p !== participant)
-			);
+		const udpateParticipants = () => {
+			setParticipants(Array.from(room.participants.values()));
+			console.log(room.participants);
 		};
 
 		if (room) {
-			room.participants.forEach(participantConnected);
-			room.on('participantConnected', participantConnected);
-			room.on('participantDisconnected', participantDisconnected);
+			// console.log({ room });
+			room.participants.forEach(udpateParticipants);
+			room.on('participantConnected', udpateParticipants);
+			room.on('participantDisconnected', udpateParticipants);
+
+			// room.on('participantConnected', participantConnected);
+			// room.on('participantDisconnected', participantDisconnected);
+
+			room.on('trackPublished', udpateParticipants);
+			room.on('trackUnpublished', udpateParticipants);
 
 			return () => {
-				room.off('participantConnected', participantConnected);
-				room.off('participantDisconnected', participantDisconnected);
+				room.off('participantConnected', udpateParticipants);
+				room.off('participantDisconnected', udpateParticipants);
+				room.off('trackPublished', udpateParticipants);
+				room.off('trackUnpublished', udpateParticipants);
+				// room.off('participantDisconnected', participantDisconnected);
+				// room.off('trackPublished', track => {
+				// 	console.log('track published', track);
+				// });
+				// room.on('trackUnpublished', track => {
+				// 	console.log('track unpublished', track);
+				// });
 			};
 		}
 	}, [room]);
@@ -84,12 +57,17 @@ export function useMeet() {
 			);
 		}
 
+		const count = participants.length;
+
 		const data = await fetch('/api/token', {
 			method: 'PUT',
 			headers: {
 				'Content-Type': 'application/json',
 			},
-			body: JSON.stringify({ username: `${username} copia`, room: roomName }),
+			body: JSON.stringify({
+				username: `${username} ${count}`,
+				room: roomName,
+			}),
 		}).then(res => res.json());
 
 		const [token] = data;
@@ -111,8 +89,6 @@ export function useMeet() {
 
 		const [token, roomNameServer] = data;
 
-		console.log({ token, roomNameServer });
-
 		setToken(token);
 		setRoomName(roomNameServer);
 		setLoading(false);
@@ -122,13 +98,21 @@ export function useMeet() {
 
 	const initializeMeet = async () => {
 		setLoading(true);
+
 		try {
-			const videoRoom = await Video.connect(token, {
-				name: roomName,
-				video: true,
-				audio: true,
+			const tracks = await Video.createLocalTracks({
+				audio: { facingMode: 'user' },
+				video: { facingMode: 'user' },
 			});
 
+			const videoRoom = await Video.connect(token, {
+				name: roomName,
+				tracks,
+			});
+
+			setSharingVideo(true);
+			setSharingAudio(true);
+			setLocalTracks(tracks);
 			setRoom(videoRoom);
 			setLoading(false);
 		} catch (error) {
@@ -142,11 +126,40 @@ export function useMeet() {
 		setToken(null);
 		setRoomName('');
 		if (room) {
-			room.localParticipant.tracks.forEach(trackPublication => {
-				const attachedElements = trackPublication.track.detach();
+			room.localParticipant.tracks.forEach(publication => {
+				publication.track.stop();
+				const attachedElements = publication.track.detach();
 				attachedElements.forEach(element => element.remove());
 			});
 			room.disconnect();
+		}
+	};
+
+	const toggleVideo = () => {
+		const track = localTracks.find(track => track.kind === 'video');
+
+		if (track.isEnabled) {
+			track.disable();
+			setSharingVideo(false);
+			room.localParticipant.unpublishTrack(track);
+		} else {
+			track.enable();
+			setSharingVideo(true);
+			room.localParticipant.publishTrack(track);
+		}
+	};
+
+	const toggleAudio = () => {
+		const track = localTracks.find(track => track.kind === 'audio');
+		console.log(track.isEnabled);
+		if (track.isEnabled) {
+			track.disable();
+			setSharingAudio(false);
+			room.localParticipant.unpublishTrack(track);
+		} else {
+			track.enable();
+			setSharingAudio(true);
+			room.localParticipant.publishTrack(track);
 		}
 	};
 
@@ -170,5 +183,9 @@ export function useMeet() {
 		leaveRoom,
 		clearRoomName,
 		changeRoomName,
+		toggleVideo,
+		toggleAudio,
+		isSharingVideo,
+		isSharingAudio,
 	};
 }
