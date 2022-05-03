@@ -9,10 +9,11 @@ module.exports = {
 				'room-layout': '1fr auto',
 				'landing-layout': 'auto 1fr',
 				'web-layout': 'auto 1fr auto',
+				'participants-layout': 'repeat(auto-fill, minmax(180px, auto))',
 			},
 			gridTemplateColumns: {
 				'card-user-layout': 'auto 1fr auto',
-				'participants-layout': 'repeat(auto-fit, minmax(320px, 1fr))',
+				'participants-layout': 'repeat(auto-fill, minmax(320px, 1fr))',
 			},
 			gridAutoRows: {
 				participants: '1fr',

@@ -1,5 +1,7 @@
 import { useEffect, useState } from 'react';
+import toast from 'react-hot-toast';
 import Video from 'twilio-video';
+import Notification from '~/components/Notification';
 
 const MIN_ROOM_NAME_LENGTH = 16;
 
@@ -12,37 +14,46 @@ export function useMeet() {
 	const [isLoading, setLoading] = useState(false);
 	const [isSharingVideo, setSharingVideo] = useState(false);
 	const [isSharingAudio, setSharingAudio] = useState(false);
+	const [isDomainSpeaker, setDomainSpeaker] = useState(null);
 
 	useEffect(() => {
-		const udpateParticipants = () => {
+		const token = localStorage.getItem('token');
+		setToken(token);
+	}, []);
+
+	useEffect(() => {
+		const udpateParticipants = () =>
 			setParticipants(Array.from(room.participants.values()));
-			console.log(room.participants);
-		};
 
 		if (room) {
 			// console.log({ room });
 			room.participants.forEach(udpateParticipants);
-			room.on('participantConnected', udpateParticipants);
-			room.on('participantDisconnected', udpateParticipants);
-
-			// room.on('participantConnected', participantConnected);
-			// room.on('participantDisconnected', participantDisconnected);
+			room.on('participantConnected', participant => {
+				udpateParticipants();
+				Notification(`${participant.identity} se ha unido a la sala`);
+			});
+			room.on('participantDisconnected', participant => {
+				udpateParticipants();
+				Notification(`${participant.identity} se ha salido de la sala`);
+			});
 
 			room.on('trackPublished', udpateParticipants);
 			room.on('trackUnpublished', udpateParticipants);
+			room.on('disconnected', () => {
+				toast.success('Has salido de la sala');
+			});
+			room.on('dominantSpeakerChanged', participant => {
+				console.log(participant?.identity, room.localParticipant.identity);
+				setDomainSpeaker(
+					participant?.identity === room.localParticipant.identity
+				);
+			});
 
 			return () => {
 				room.off('participantConnected', udpateParticipants);
 				room.off('participantDisconnected', udpateParticipants);
 				room.off('trackPublished', udpateParticipants);
 				room.off('trackUnpublished', udpateParticipants);
-				// room.off('participantDisconnected', participantDisconnected);
-				// room.off('trackPublished', track => {
-				// 	console.log('track published', track);
-				// });
-				// room.on('trackUnpublished', track => {
-				// 	console.log('track unpublished', track);
-				// });
 			};
 		}
 	}, [room]);
@@ -57,7 +68,7 @@ export function useMeet() {
 			);
 		}
 
-		const count = participants.length;
+		// const count = participants.length;
 
 		const data = await fetch('/api/token', {
 			method: 'PUT',
@@ -65,13 +76,14 @@ export function useMeet() {
 				'Content-Type': 'application/json',
 			},
 			body: JSON.stringify({
-				username: `${username} ${count}`,
+				username,
 				room: roomName,
 			}),
 		}).then(res => res.json());
 
 		const [token] = data;
 
+		localStorage.setItem('token', token);
 		setToken(token);
 		setLoading(false);
 	};
@@ -89,6 +101,7 @@ export function useMeet() {
 
 		const [token, roomNameServer] = data;
 
+		localStorage.setItem('token', token);
 		setToken(token);
 		setRoomName(roomNameServer);
 		setLoading(false);
@@ -99,25 +112,30 @@ export function useMeet() {
 	const initializeMeet = async () => {
 		setLoading(true);
 
-		try {
-			const tracks = await Video.createLocalTracks({
-				audio: { facingMode: 'user' },
-				video: { facingMode: 'user' },
-			});
+		const tracks = await Video.createLocalTracks({
+			audio: { facingMode: 'user' },
+			video: { facingMode: 'user' },
+		});
 
-			const videoRoom = await Video.connect(token, {
-				name: roomName,
-				tracks,
-			});
+		if (token || localStorage.getItem('token')) {
+			const videoRoom = await Video.connect(
+				token || localStorage.getItem('token'),
+				{
+					dominantSpeaker: true,
+					name: roomName,
+					tracks,
+				}
+			);
 
 			setSharingVideo(true);
 			setSharingAudio(true);
 			setLocalTracks(tracks);
 			setRoom(videoRoom);
 			setLoading(false);
-		} catch (error) {
-			console.error('initializeMeet Error: ', error);
+		} else {
+			leaveRoom();
 			setLoading(false);
+			throw new Error();
 		}
 	};
 
@@ -125,6 +143,7 @@ export function useMeet() {
 		setRoom(null);
 		setToken(null);
 		setRoomName('');
+		localStorage.removeItem('token');
 		if (room) {
 			room.localParticipant.tracks.forEach(publication => {
 				publication.track.stop();
@@ -187,5 +206,6 @@ export function useMeet() {
 		toggleAudio,
 		isSharingVideo,
 		isSharingAudio,
+		isDomainSpeaker,
 	};
 }

@@ -37,7 +37,7 @@ export default function JoinRoomForm(props) {
 					type='text'
 					name='room'
 					placeholder='Ingresa el identificador de la reunión'
-					className='w-full px-6 py-3 text-sm lg:text-base border border-slate-300 rounded-md placeholder:text-slate-400 bg-slate-50 focus:ring-1 focus:ring-indigo-500 focus:border-indigo-500 focus:outline-none'
+					className='w-full px-6 py-3 text-sm lg:text-base border border-zinc-300 rounded-md placeholder:text-zinc-400 bg-zinc-50 focus:ring-1 focus:ring-indigo-500 focus:border-indigo-500 focus:outline-none'
 				/>
 				<ButtonToggle
 					type='button'
@@ -53,7 +53,7 @@ export default function JoinRoomForm(props) {
 				type='submit'
 				disabled={isLoading}
 				className={clsx(
-					'bg-indig-50 text-slate-900 border border-slate-200 bg-white/50 font-medium rounded-md px-6 py-3 transition-shadow hover:shadow-xl hover:shadow-slate-500/10 text-sm lg:text-base',
+					'bg-indig-50 text-zinc-900 border border-zinc-200 bg-white/50 font-medium rounded-md px-6 py-3 transition-shadow hover:shadow-xl hover:shadow-zinc-500/10 text-sm lg:text-base',
 					hasValueRoomName ? 'block' : 'hidden',
 					isLoading && 'cursor-not-allowed hover:shadow-none'
 				)}

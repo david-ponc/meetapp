@@ -3,7 +3,7 @@ import clsx from 'clsx';
 export default function Spinner({ className, ...props }) {
 	return (
 		<svg
-			className={clsx('animate-spin -ml-1 mr-3 h-5 w-5 ', className)}
+			className={clsx('animate-spin -ml-1 mr-3 h-5 w-5', className)}
 			fill='none'
 			viewBox='0 0 24 24'
 			{...props}

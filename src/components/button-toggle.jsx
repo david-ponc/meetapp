@@ -12,7 +12,7 @@ export default function ButtonToggle({
 	return (
 		<button
 			className={clsx(
-				'h-9 w-9 rounded-md bg-white absolute border border-slate-200 top-1/2 -translate-y-1/2 right-[5px] z-10 flex items-center justify-center',
+				'h-9 w-9 rounded-md bg-white absolute border border-zinc-200 top-1/2 -translate-y-1/2 right-[5px] z-10 flex items-center justify-center',
 				className
 			)}
 			onClick={isInitialState ? onClick : fallbackAction}
