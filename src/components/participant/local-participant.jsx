@@ -1,10 +1,11 @@
 import clsx from 'clsx';
-import { User as UserIcon } from 'iconoir-react';
+import { MicMute as MicMuteIcon, User as UserIcon } from 'iconoir-react';
 import { useEffect, useRef } from 'react';
 
 export function LocalParticipant({
 	participant,
 	isSharingVideo,
+	isSharingAudio,
 	isDomainSpeaker,
 }) {
 	const videoRef = useRef();
@@ -28,9 +29,10 @@ export function LocalParticipant({
 			)}
 		>
 			<span className='absolute inset-0 bg-gradient-to-b from-transparent via-transparent to-transparent group-hover:to-zinc-900 transition-all'></span>
-			<p className='absolute bottom-2 left-2 text-transparent group-hover:text-white'>
-				{participant.identity}
-			</p>
+			<section className='absolute bottom-2 left-2 right-2 text-transparent group-hover:text-white flex items-center justify-between'>
+				<p>{participant.identity}</p>
+				{!isSharingAudio && <MicMuteIcon stroke={2} width={18} height={18} />}
+			</section>
 			<video
 				className={clsx('w-full', isSharingVideo ? null : 'hidden')}
 				ref={videoRef}
