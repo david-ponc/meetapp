@@ -1,38 +1,27 @@
 import { ArrowRightIcon, PasteIcon, XIcon } from '@primer/octicons-react';
 import clsx from 'clsx';
-import { useContext, useRef } from 'react';
+import { useContext } from 'react';
 import { MeetContext } from '~/contexts';
 import ButtonToggle from './button-toggle';
 import Spinner from './spinner';
 
-export default function JoinRoomForm(props) {
-	const { isLoading, roomName, clearRoomName, changeRoomName } =
-		useContext(MeetContext);
-	const inputRef = useRef();
-
-	const hasValueRoomName = roomName !== '';
-
-	const handleChangeRoomName = event => {
-		const { value } = event.target;
-		changeRoomName(value);
-	};
-
-	const pasteTextOfClipboard = async () => {
-		if ('clipboard' in navigator) {
-			const text = await navigator.clipboard.readText();
-			changeRoomName(text);
-		} else {
-			alert('Your browser does not support clipboard API');
-		}
-		inputRef.current.focus();
-	};
+export default function JoinRoomForm({
+	roomName,
+	inputRoomNameRef,
+	hasValueRoomName,
+	changeByTyping,
+	changeByClipboard,
+	resetRoomName,
+	...props
+}) {
+	const { isLoading } = useContext(MeetContext);
 
 	return (
 		<form className='flex flex-col gap-4' {...props}>
 			<fieldset className='relative'>
 				<input
-					ref={inputRef}
-					onChange={handleChangeRoomName}
+					ref={inputRoomNameRef}
+					onChange={changeByTyping}
 					value={roomName}
 					type='text'
 					name='room'
@@ -41,10 +30,10 @@ export default function JoinRoomForm(props) {
 				/>
 				<ButtonToggle
 					type='button'
-					onClick={pasteTextOfClipboard}
+					onClick={changeByClipboard}
 					fallbackContent={<XIcon size={16} />}
-					fallbackAction={clearRoomName}
-					isInitialState={roomName === ''}
+					fallbackAction={resetRoomName}
+					isInitialState={!!roomName}
 				>
 					<PasteIcon size={16} />
 				</ButtonToggle>
