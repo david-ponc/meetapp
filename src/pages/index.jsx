@@ -9,6 +9,7 @@ import CreateRoomForm from '~/components/create-room-form';
 import JoinRoomForm from '~/components/join-room-form';
 import Spinner from '~/components/spinner';
 import { AuthContext, MeetContext } from '~/contexts';
+import { useRoomName } from '~/hooks/use-room-name';
 
 export default function Home() {
 	const router = useRouter();
@@ -18,7 +19,15 @@ export default function Home() {
 		user,
 		isLoading: isAuthLoading,
 	} = useContext(AuthContext);
-	const { joinRoom, createRoom, roomName } = useContext(MeetContext);
+	const { joinRoom, createRoom } = useContext(MeetContext);
+	const {
+		roomName,
+		changeByTyping,
+		changeByClipboard,
+		inputRoomNameRef,
+		hasValueRoomName,
+		resetRoomName,
+	} = useRoomName();
 
 	const handleCreateRoom = async event => {
 		event.preventDefault();
@@ -53,8 +62,12 @@ export default function Home() {
 			return;
 		}
 
-		joinRoom({ username: user.name })
-			.then(() => router.push('/room/[roomId]', `/room/${roomName}`))
+		joinRoom({ username: user.name, roomName })
+			.then(roomName => {
+				resetRoomName();
+				return roomName;
+			})
+			.then(roomName => router.push('/room/[roomId]', `/room/${roomName}`))
 			.catch(error =>
 				toast.custom(
 					t => (
@@ -113,7 +126,15 @@ export default function Home() {
 											{roomName === '' && (
 												<CreateRoomForm onSubmit={handleCreateRoom} />
 											)}
-											<JoinRoomForm onSubmit={handleJoinRoom} />
+											<JoinRoomForm
+												roomName={roomName}
+												onSubmit={handleJoinRoom}
+												changeByTyping={changeByTyping}
+												changeByClipboard={changeByClipboard}
+												inputRoomNameRef={inputRoomNameRef}
+												hasValueRoomName={hasValueRoomName}
+												resetRoomName={resetRoomName}
+											/>
 										</section>
 									</section>
 								</>
