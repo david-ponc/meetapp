@@ -6,7 +6,8 @@
 		"dev": "next dev",
 		"build": "next build",
 		"start": "next start",
-		"lint": "next lint"
+		"lint": "next lint",
+		"format": "prettier --write ."
 	},
 	"dependencies": {
 		"@primer/octicons-react": "17.0.0",
@@ -24,6 +25,8 @@
 		"twilio-video": "2.21.1"
 	},
 	"devDependencies": {
+		"@types/react": "18.0.8",
+		"@types/react-dom": "18.0.3",
 		"autoprefixer": "10.4.5",
 		"eslint": "8.14.0",
 		"eslint-config-next": "12.1.5",
