@@ -1,6 +1,6 @@
-import { PeopleIcon } from '@primer/octicons-react';
+import { CopyIcon, PeopleIcon } from '@primer/octicons-react';
 import { useRouter } from 'next/router';
-import { useContext, useEffect, useState } from 'react';
+import { useContext, useEffect } from 'react';
 import { LocalParticipant, RemoteParticipant } from '~/components/participant';
 import { MeetContext } from '~/contexts/meet-context';
 import {
@@ -13,26 +13,20 @@ import {
 import { Toaster } from 'react-hot-toast';
 import Head from 'next/head';
 import Spinner from '~/components/spinner';
-
-function getTimeNow() {
-	const date = new Date();
-	const time = date.toLocaleTimeString('es-MX', {
-		hour: '2-digit',
-		minute: '2-digit',
-	});
-	return time;
-}
+import { useTime } from '~/hooks/use-time';
+import { useRoomName } from '~/hooks/use-room-name';
+import clsx from 'clsx';
 
 export default function Room() {
 	const router = useRouter();
-	const [time, setTime] = useState(getTimeNow);
-	// const { isLoading } = useContext(AuthContext);
+	const [time] = useTime();
+	const { roomName, handleClickToCopyOnClipboard, updateRoomName } =
+		useRoomName();
 	const {
 		initializeMeet,
 		room,
 		leaveRoom,
 		participants,
-		roomName,
 		toggleVideo,
 		toggleAudio,
 		isSharingVideo,
@@ -41,18 +35,8 @@ export default function Room() {
 	} = useContext(MeetContext);
 
 	useEffect(() => {
-		initializeMeet().catch(() => router.replace('/'));
+		initializeMeet().then(updateRoomName);
 
-		const updateTime = () => {
-			const now = getTimeNow();
-			setTime(now);
-		};
-
-		setInterval(updateTime, 1000);
-
-		return () => {
-			clearInterval(updateTime);
-		};
 		// eslint-disable-next-line react-hooks/exhaustive-deps
 	}, []);
 
@@ -64,7 +48,7 @@ export default function Room() {
 	return (
 		<>
 			<Head>
-				<title>Meetapp | {roomName}</title>
+				<title>Meetapp | {roomName || 'Contectado...'}</title>
 				<link rel='icon' href='/favicon.ico' />
 				<meta
 					name='description'
@@ -74,7 +58,14 @@ export default function Room() {
 
 			<main className='w-full h-screen grid grid-rows-room-layout'>
 				{room ? (
-					<section className='bg-zinc-900 p-6 gap-4 grid grid-cols-participants-layout grid-rows-participants-layout justify-center lg:justify-start'>
+					<section
+						className={clsx(
+							'bg-zinc-900 p-6 gap-4 ',
+							participants.length === 0 && 'flex items-center justify-center',
+							participants.length > 0 &&
+								'grid grid-cols-participants-layout grid-rows-participants-layout justify-center lg:justify-start'
+						)}
+					>
 						<LocalParticipant
 							participant={room.localParticipant}
 							isSharingVideo={isSharingVideo}
@@ -93,22 +84,41 @@ export default function Room() {
 				) : (
 					<section className='bg-zinc-900 flex flex-col justify-center items-center gap-4 text-zinc-50'>
 						<Spinner className='text-indigo-300' />
-						<p className='font-medium text-xl'>Loading...</p>
+						<p className='font-medium text-xl'>Contectando...</p>
 					</section>
 				)}
 
-				<footer className='flex px-6 py-3 items-center justify-between bg-zinc-800 text-zinc-50'>
-					<p className='flex items-center gap-4 font-semibold'>
-						<span className='hidden md:inline-block'>{time}</span>
-						<span className='hidden md:inline-block h-4 w-[1px] bg-zinc-50'></span>
-						<span className='whitespace-nowrap overflow-hidden text-ellipsis max-w-[56px] md:max-w-[auto]'>
-							{roomName}
-						</span>
-					</p>
-					<section className='flex items-center gap-2'>
+				<footer className='px-6 py-3 grid grid-cols-3 bg-zinc-800 text-zinc-50'>
+					<section className='justify-self-start flex items-center gap-4 text-sm font-semibold w-[56px] lg:w-auto'>
+						<p className='hidden lg:block'>{time}</p>
+						<div className='hidden lg:block h-4 w-[1px] bg-zinc-50'></div>
+						<section className='flex items-center gap-4'>
+							{roomName ? (
+								<p className='truncate'>{roomName}</p>
+							) : (
+								<div className='w-32 h-2 animate-pulse bg-zinc-700 rounded-md' />
+							)}
+							<button
+								disabled={!roomName}
+								onClick={handleClickToCopyOnClipboard}
+								className={clsx(
+									'rounded-lg bg-zinc-700 px-3 py-2 transition-transform',
+									!roomName
+										? 'cursor-not-allowed text-zinc-500'
+										: 'active:scale-90 text-zinc-50'
+								)}
+							>
+								<CopyIcon size={16} />
+							</button>
+						</section>
+					</section>
+					<section className='justify-self-center flex items-center gap-2'>
 						{room && (
 							<>
-								<button onClick={toggleVideo}>
+								<button
+									onClick={toggleVideo}
+									className='transition-transform active:scale-90'
+								>
 									{isSharingVideo ? (
 										<div className='p-2 rounded-xl hover:bg-zinc-700 text-zinc-400'>
 											<VideoCameraIcon stroke={2} />
@@ -119,7 +129,10 @@ export default function Room() {
 										</div>
 									)}
 								</button>
-								<button onClick={toggleAudio}>
+								<button
+									onClick={toggleAudio}
+									className='transition-transform active:scale-90'
+								>
 									{isSharingAudio ? (
 										<div className='p-2 rounded-xl hover:bg-zinc-700 text-zinc-400'>
 											<MicIcon stroke={2} />
@@ -132,14 +145,14 @@ export default function Room() {
 								</button>
 								<button
 									onClick={handleLeaveRoom}
-									className='py-2 px-4 rounded-xl bg-rose-500 text-zinc-50 text-sm font-medium'
+									className='py-2 px-4 rounded-xl bg-rose-500 text-zinc-50 text-sm font-medium transition-transform active:scale-90'
 								>
 									<PhoneIcon stroke={2} />
 								</button>
 							</>
 						)}
 					</section>
-					<section className='flex items-center gap-2'>
+					<section className='justify-self-end flex items-center gap-2'>
 						<span className='text-sm font-bold'>{participants.length + 1}</span>
 						<PeopleIcon size={22} />
 					</section>
