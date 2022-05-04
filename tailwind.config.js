@@ -6,7 +6,7 @@ module.exports = {
 		},
 		extend: {
 			gridTemplateRows: {
-				'room-layout': '1fr auto',
+				'room-layout': '1fr 64px',
 				'landing-layout': 'auto 1fr',
 				'web-layout': 'auto 1fr auto',
 				'participants-layout': 'repeat(auto-fill, minmax(180px, auto))',
