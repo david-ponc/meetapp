@@ -2,15 +2,14 @@ import { useEffect, useState } from 'react';
 import toast from 'react-hot-toast';
 import Video from 'twilio-video';
 import Notification from '~/components/Notification';
-
-const MIN_ROOM_NAME_LENGTH = 16;
+import { debounce } from '~/libs/debounce';
+import { DEBOUNCE_TIMEOUT, MIN_ROOM_NAME_LENGTH } from '~/utils/constans';
 
 export function useMeet() {
 	const [localTracks, setLocalTracks] = useState([]);
 	const [room, setRoom] = useState(null);
 	const [participants, setParticipants] = useState([]);
 	const [token, setToken] = useState(null);
-	const [roomName, setRoomName] = useState('');
 	const [isLoading, setLoading] = useState(false);
 	const [isSharingVideo, setSharingVideo] = useState(false);
 	const [isSharingAudio, setSharingAudio] = useState(false);
@@ -58,7 +57,7 @@ export function useMeet() {
 		}
 	}, [room]);
 
-	const joinRoom = async ({ username }) => {
+	const joinRoom = async ({ username, roomName }) => {
 		setLoading(true);
 
 		if (roomName === '' || roomName.length < MIN_ROOM_NAME_LENGTH) {
@@ -84,8 +83,11 @@ export function useMeet() {
 		const [token] = data;
 
 		localStorage.setItem('token', token);
+		localStorage.setItem('roomName', roomName);
 		setToken(token);
 		setLoading(false);
+
+		return Promise.resolve(roomName);
 	};
 
 	const createRoom = async ({ username }) => {
@@ -102,8 +104,8 @@ export function useMeet() {
 		const [token, roomNameServer] = data;
 
 		localStorage.setItem('token', token);
+		localStorage.setItem('roomName', roomNameServer);
 		setToken(token);
-		setRoomName(roomNameServer);
 		setLoading(false);
 
 		return Promise.resolve(roomNameServer);
@@ -117,33 +119,39 @@ export function useMeet() {
 			video: { facingMode: 'user' },
 		});
 
-		if (token || localStorage.getItem('token')) {
-			const videoRoom = await Video.connect(
-				token || localStorage.getItem('token'),
-				{
-					dominantSpeaker: true,
-					name: roomName,
-					tracks,
-				}
-			);
-
-			setSharingVideo(true);
-			setSharingAudio(true);
-			setLocalTracks(tracks);
-			setRoom(videoRoom);
+		if (token === null) {
 			setLoading(false);
-		} else {
-			leaveRoom();
-			setLoading(false);
-			throw new Error();
+			throw new Error('Hubo un problema al conectarte a la sala 😔.');
 		}
+
+		const roomName = localStorage.getItem('roomName');
+
+		if (roomName === null) {
+			setLoading(false);
+			throw new Error('Hubo un problema al conectarte a la sala 😔.');
+		}
+
+		const videoRoom = await Video.connect(token, {
+			dominantSpeaker: true,
+			name: roomName,
+			tracks,
+		});
+
+		setSharingVideo(true);
+		setSharingAudio(true);
+		setLocalTracks(tracks);
+		setRoom(videoRoom);
+		setLoading(false);
+
+		return Promise.resolve(roomName);
 	};
 
-	const leaveRoom = () => {
+	const leaveRoom = debounce(() => {
 		setRoom(null);
 		setToken(null);
-		setRoomName('');
 		localStorage.removeItem('token');
+		localStorage.removeItem('roomName');
+
 		if (room) {
 			room.localParticipant.tracks.forEach(publication => {
 				publication.track.stop();
@@ -152,7 +160,9 @@ export function useMeet() {
 			});
 			room.disconnect();
 		}
-	};
+
+		return Promise.resolve();
+	}, DEBOUNCE_TIMEOUT);
 
 	const toggleVideo = () => {
 		const track = localTracks.find(track => track.kind === 'video');
@@ -182,26 +192,15 @@ export function useMeet() {
 		}
 	};
 
-	const clearRoomName = () => {
-		setRoomName('');
-	};
-
-	const changeRoomName = roomName => {
-		setRoomName(roomName);
-	};
-
 	return {
 		room,
 		participants,
 		token,
-		roomName,
 		isLoading,
 		joinRoom,
 		createRoom,
 		initializeMeet,
 		leaveRoom,
-		clearRoomName,
-		changeRoomName,
 		toggleVideo,
 		toggleAudio,
 		isSharingVideo,
