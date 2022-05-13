@@ -25,7 +25,6 @@ export function useMeet() {
 			setParticipants(Array.from(room.participants.values()));
 
 		if (room) {
-			// console.log({ room });
 			room.participants.forEach(udpateParticipants);
 			room.on('participantConnected', participant => {
 				udpateParticipants();
@@ -42,7 +41,6 @@ export function useMeet() {
 				toast.success('Has salido de la sala');
 			});
 			room.on('dominantSpeakerChanged', participant => {
-				console.log(participant?.identity, room.localParticipant.identity);
 				setDomainSpeaker(
 					participant?.identity === room.localParticipant.identity
 				);
@@ -117,7 +115,7 @@ export function useMeet() {
 		const tracks = await Video.createLocalTracks({
 			audio: { facingMode: 'user' },
 			video: { facingMode: 'user' },
-		});
+		}).catch(() => {});
 
 		if (token === null) {
 			setLoading(false);
@@ -134,12 +132,14 @@ export function useMeet() {
 		const videoRoom = await Video.connect(token, {
 			dominantSpeaker: true,
 			name: roomName,
+			video: !!tracks,
+			audio: !!tracks,
 			tracks,
-		});
+		}).catch(() => {});
 
-		setSharingVideo(true);
-		setSharingAudio(true);
-		setLocalTracks(tracks);
+		setSharingVideo(!!tracks);
+		setSharingAudio(!!tracks);
+		!!tracks && setLocalTracks(tracks);
 		setRoom(videoRoom);
 		setLoading(false);
 
@@ -164,7 +164,16 @@ export function useMeet() {
 		return Promise.resolve();
 	}, DEBOUNCE_TIMEOUT);
 
-	const toggleVideo = () => {
+	const toggleVideo = async () => {
+		if (localTracks?.length === 0) {
+			const tracks = await Video.createLocalTracks({
+				audio: { facingMode: 'user' },
+				video: { facingMode: 'user' },
+			}).catch(() => {});
+			setLocalTracks(tracks);
+			return;
+		}
+
 		const track = localTracks.find(track => track.kind === 'video');
 
 		if (track.isEnabled) {
@@ -179,8 +188,10 @@ export function useMeet() {
 	};
 
 	const toggleAudio = () => {
+		if (localTracks?.length === 0) return;
+
 		const track = localTracks.find(track => track.kind === 'audio');
-		console.log(track.isEnabled);
+
 		if (track.isEnabled) {
 			track.disable();
 			setSharingAudio(false);
