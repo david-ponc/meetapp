@@ -12,7 +12,7 @@ export function LocalParticipant({
 	const audioRef = useRef();
 
 	useEffect(() => {
-		participant.tracks.forEach(track => {
+		participant?.tracks.forEach(track => {
 			if (track.kind === 'video') {
 				track?.track.attach(videoRef.current);
 			} else if (track.kind === 'audio') {
@@ -24,7 +24,7 @@ export function LocalParticipant({
 	return (
 		<section
 			className={clsx(
-				'bg-zinc-800 rounded-lg aspect-video overflow-hidden relative group border border-zinc-800',
+				'bg-zinc-800 rounded-lg aspect-video overflow-hidden relative group border border-zinc-800 min-w-full md:min-w-[640px]',
 				isDomainSpeaker && 'shadow-lg shadow-emerald-600'
 			)}
 		>
@@ -39,17 +39,25 @@ export function LocalParticipant({
 				autoPlay={true}
 			/>
 			{!isSharingVideo && (
-				<section className='h-full bg-zinc-800 rounded-lg flex flex-col items-center justify-center p-2 gap-4 '>
+				<section className='h-full bg-zinc-800 rounded-lg flex flex-col items-center justify-center p-2 gap-4'>
 					<figure className='w-16 h-16 rounded-full overflow-hidden relative bg-zinc-700 flex justify-center items-center text-zinc-400 border border-zinc-600/50'>
 						<UserIcon width={48} height={48} />
 					</figure>
 					<p className='text-lg font-medium text-zinc-100'>
 						{participant.identity}
+						{!isSharingAudio && (
+							<MicMuteIcon
+								className='lg:hidden inline ml-2 text-zinc-400'
+								stroke={2}
+								width={20}
+								height={20}
+							/>
+						)}
 					</p>
 				</section>
 			)}
 
-			<audio ref={audioRef} autoPlay={true} muted={false} />
+			<audio ref={audioRef} autoPlay={true} muted={isSharingAudio} />
 		</section>
 	);
 }
