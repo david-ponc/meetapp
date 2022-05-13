@@ -8,8 +8,6 @@ export function RemoteParticipant({ participant, isDomainSpeaker }) {
 	const isSharingVideo = Array.from(participant.videoTracks.values()).length;
 	const isSharingAudio = Array.from(participant.audioTracks.values()).length;
 
-	console.log({ isSharingAudio });
-
 	useEffect(() => {
 		const attachTracks = track => {
 			if (track.kind === 'video') {
@@ -53,7 +51,7 @@ export function RemoteParticipant({ participant, isDomainSpeaker }) {
 				</section>
 			)}
 
-			<audio ref={audioRef} autoPlay={true} muted={false} />
+			<audio ref={audioRef} autoPlay={true} muted={isSharingAudio} />
 		</section>
 	);
 }
