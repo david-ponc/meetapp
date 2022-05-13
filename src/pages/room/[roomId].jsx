@@ -94,7 +94,7 @@ export default function Room() {
 						<div className='hidden lg:block h-4 w-[1px] bg-zinc-50'></div>
 						<section className='flex items-center gap-4'>
 							{roomName ? (
-								<p className='truncate'>{roomName}</p>
+								<p className='hidden md:block truncate'>{roomName}</p>
 							) : (
 								<div className='w-32 h-2 animate-pulse bg-zinc-700 rounded-md' />
 							)}
