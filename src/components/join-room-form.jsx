@@ -33,7 +33,7 @@ export default function JoinRoomForm({
 					onClick={changeByClipboard}
 					fallbackContent={<XIcon size={16} />}
 					fallbackAction={resetRoomName}
-					isInitialState={!!roomName}
+					isInitialState={!roomName}
 				>
 					<PasteIcon size={16} />
 				</ButtonToggle>
