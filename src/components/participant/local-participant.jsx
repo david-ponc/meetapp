@@ -24,7 +24,7 @@ export function LocalParticipant({
 	return (
 		<section
 			className={clsx(
-				'bg-zinc-800 rounded-lg aspect-video overflow-hidden relative group border border-zinc-800 min-w-full md:min-w-[640px]',
+				'bg-zinc-800 rounded-lg aspect-video overflow-hidden relative group border border-zinc-800 min-w-full',
 				isDomainSpeaker && 'shadow-lg shadow-emerald-600'
 			)}
 		>
